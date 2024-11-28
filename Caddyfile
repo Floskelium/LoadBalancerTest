@@ -1,0 +1,27 @@
+{
+    debug
+}
+
+:80 {
+    # Log all incoming requests for easier debugging
+    log {
+        output stdout
+        format json
+    }
+
+    # Match requests with a User-ID header
+    @userIDHeader {
+        header User-ID *
+    }
+
+    # Shard based on User-ID value using hashing
+    reverse_proxy @userIDHeader flask1:5001 flask2:5002 flask3:5003 {
+        lb_policy header User-ID
+    }
+
+    reverse_proxy flask1:5001 flask2:5002 flask3:5003 {
+        lb_policy round_robin
+        lb_retries 2
+        fail_duration 10s
+    }
+}

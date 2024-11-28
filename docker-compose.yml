@@ -1,0 +1,85 @@
+
+services:
+  # Caddy reverse proxy to shard and route requests based on user ID
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - flask1
+      - flask2
+      - flask3
+
+  # Flask server 1
+  flask1:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_RUN_PORT=5001
+      - SHARD_ID=1
+      - DATABASE_URL=postgresql://flask:flask@db1/flask_db1
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db1
+
+  # Flask server 2
+  flask2:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_RUN_PORT=5002
+      - SHARD_ID=2
+      - DATABASE_URL=postgresql://flask:flask@db2/flask_db2
+    ports:
+      - "5002:5002"
+    depends_on:
+      - db2
+
+  # Flask server 3
+  flask3:
+    build:
+      context: ./flask_app
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_RUN_PORT=5003
+      - SHARD_ID=3
+      - DATABASE_URL=postgresql://flask:flask@db3/flask_db3
+    ports:
+      - "5003:5003"
+    depends_on:
+      - db3
+
+  # Database shard 1
+  db1:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: flask
+      POSTGRES_PASSWORD: flask
+      POSTGRES_DB: flask_db1
+    volumes:
+      - ./db1_data:/var/lib/postgresql/data
+
+  # Database shard 2
+  db2:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: flask
+      POSTGRES_PASSWORD: flask
+      POSTGRES_DB: flask_db2
+    volumes:
+      - ./db2_data:/var/lib/postgresql/data
+
+  # Database shard 3
+  db3:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: flask
+      POSTGRES_PASSWORD: flask
+      POSTGRES_DB: flask_db3
+    volumes:
+      - ./db3_data:/var/lib/postgresql/data
